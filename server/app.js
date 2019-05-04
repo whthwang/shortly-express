@@ -85,10 +85,12 @@ app.post('/signup',
 (req, res, next) => {
   return models.Users.create(req.body)
   .then(success => {
-    res.status(200).send('success creating a new user!!!');
+    res.status(200).redirect('/');
+    res.end();
   })
   .catch(error => {
-    res.status(500).send(error.cause.sqlMessage);
+    res.status(500).redirect('/signup');
+    res.end();
   })
 });
 
@@ -97,31 +99,31 @@ app.post('/login',
   var attemptedPass = req.body.password;
   var name = req.body.username;
 
+  var dbPassword; //need to put the results password in here but will lose scope
+  var dbSalt;
   
   return models.Users.get({ username: name })
   .then(results => {
       if (results !== undefined) {
-        var pass = results.password;
-        var salt = results.salt;
-        console.log('This is the salt from db: ', salt);
-      }
-      else {
-        console.log('No user by that username');
+        dbPassword = results.password;
+        dbSalt = results.salt;
+        if (models.Users.compare(attemptedPass, dbPassword, dbSalt) === true) {
+          //Send user to login page???
+          res.status(200).redirect('/');
+          res.end();
+        } else {
+          res.status(404).redirect('/login')
+          res.end();
+        }
+      } else {
+        res.status(401).redirect('/login')
+        res.end();
       }
     })
     .catch(err => {
       console.log('this is an error!!!!!!!!!!!! ', err);
     })
-
-  var dbPassword = pass; //need to put the results password in here but will lose scope
-  var dbSalt = salt;
-  console.log()
-  if (users.compare(attemptedPass, dbPassword, dbSalt) === true) {
-    //Send user to login page???
-    res.status(200).send('success logging in!!!!!!!!!!!!!!!!!!!!')
-  } else {
-    res.status(404).send('ERROR GTFOOOOOOOOOOOOOO!!!!!!!!!!!!!!!')
-  }
+    
 });
 
 /************************************************************/
